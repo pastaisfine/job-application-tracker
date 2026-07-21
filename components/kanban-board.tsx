@@ -11,6 +11,16 @@ import JobApplicationCard from "./job-application-card";
 interface ColConfig {
   color: string;
   icon: React.ReactNode;
+  // /allows the icon property to accept any valid React renderable, which includes:
+
+// JSX elements / React components (e.g., <Calendar className="h-4 w-4" /> used in 
+
+// COLUMN_CONFIG
+// )
+// Strings or numbers (rendered as text)
+// Portals, Fragments, Arrays of nodes
+// null or undefined (rendered as nothing)
+// 
 }
 const COLUMN_CONFIG: Array<ColConfig> = [
   {
@@ -82,8 +92,7 @@ function DroppableColumn({
               columns={sortedColumns}
             />
           ))}
-        <CreateJobApplicationDialog columnId={column._id} boardId={boardId} />
-
+          <CreateJobApplicationDialog columnId={column._id} boardId={boardId} />
       </CardContent>
     </Card>
   </div>
@@ -105,10 +114,10 @@ function SortableJobCard({
   )
 }
 
-export default function KanbanBoard({ board, userId }: KanbanBoardProps) {
+export default function KanbanBoard({ board }: KanbanBoardProps) {
   const columns = board.columns;
 
-    const sortedColumns = columns.sort((a, b) => a.order - b.order);
+  const sortedColumns = columns.sort((a, b) => a.order - b.order);
   return (
     <div>
       <div>

@@ -2,7 +2,7 @@
 
 "use server"
 
-import { Session } from "inspector/promises";
+import { revalidatePath } from "next/cache";
 import { getSession } from "../auth/auth";
 import connectDB from "../db";
 import { Board, Column, JobApplication } from "../models";
@@ -41,7 +41,7 @@ export async function createJobApplication(data: JobApplicationData){
         boardId,
         tags,
         description
-    } = data;
+    } = data; //object destructuring
 
     if ( !company || !position || !columnId || !boardId){
         return { error: "Missing required fields"}
@@ -91,6 +91,8 @@ export async function createJobApplication(data: JobApplicationData){
   await Column.findByIdAndUpdate(columnId, {
     $push: { jobApplications: jobApplication._id },
   });
+
+  revalidatePath("/dashboard");
 
   return { data: JSON.parse(JSON.stringify(jobApplication)) };
 }
