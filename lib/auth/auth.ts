@@ -2,12 +2,21 @@
 // This file configures and manages authentication on the backend (Node.js /
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { MongoClient } from "mongodb";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { initializeUserBoard } from "../init-user-board";
+import connectDB from "../db";
+import { MongoClient } from "mongodb";
 
-const client = new MongoClient(process.env.MONGODB_URI!);
+// const client = new MongoClient(process.env.MONGODB_URI!);
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI){
+  throw new Error("Please define MONGODB_URI")
+}
+
+const client = new MongoClient(MONGODB_URI);
+await client.connect()
+
 const db = client.db();
 // Database Connection: Connects better-auth to MongoDB using MongoClient and mongodbAdapter.
 
