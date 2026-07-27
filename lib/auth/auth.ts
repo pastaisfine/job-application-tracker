@@ -26,7 +26,7 @@ export const auth = betterAuth({
         after: async (user) => {
           if (user.id){
             await initializeUserBoard(user.id)
-            // getSession(): Retrieves the current authenticated user's session from request headers in Server Components or API routes.
+
           }
         }
       }
@@ -34,7 +34,7 @@ export const auth = betterAuth({
   }
 });
 
-// signOut(): Logs out the user server-side and redirects them to /sign-in.
+// getSession(): Retrieves the current authenticated user's session from request headers in Server Components or API routes.
 export async function getSession() {
   const result = await auth.api.getSession({
     headers: await headers()
@@ -42,7 +42,7 @@ export async function getSession() {
 
   return result
 }
-
+// signOut(): Logs out the user server-side and redirects them to /sign-in.
 export async function signOut(){
   const result = await auth.api.signOut({
     headers: await headers()
