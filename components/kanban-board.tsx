@@ -311,6 +311,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
 
   return (
     <DndContext
+      id={`kanban-${board._id}`}
       sensors={sensors}
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
