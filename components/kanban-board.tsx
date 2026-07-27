@@ -12,6 +12,7 @@ import { closestCorners, DndContext, DragEndEvent, DragOverlay, DragStartEvent, 
 import { useState } from "react";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import DeleteColumnDialog from "./delete-column-dialog";
 
 interface ColConfig {
   color: string;
@@ -60,14 +61,20 @@ function DroppableColumn({
   config,
   boardId,
   sortedColumns,
+  canDelete,
+  onDelete,
 }:{
   column: Column;
   config: ColConfig;
   boardId: string;
-  sortedColumns: Column[]
+  sortedColumns: Column[];
+  canDelete: boolean;
+  onDelete: (columnId: string) => Promise<{ success: boolean; error?: string }>;
 }){
-  const sortedJobs =
-    column.jobApplications?.sort((a, b) => a.order - b.order) || [];
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const sortedJobs = [...(column.jobApplications ?? [])].sort(
+    (a, b) => a.order - b.order
+  );
 
     const { setNodeRef, isOver } = useDroppable({
     id: column._id,
@@ -78,45 +85,68 @@ function DroppableColumn({
   });
   
   return (
-  <div>
-    <Card>
-      <CardHeader className={`${config.color} flex items-center justify-between p-4 text-white`}>
+  <div className="w-[min(85vw,22rem)] shrink-0 snap-start sm:w-80">
+    <Card className="h-full gap-0 overflow-hidden border-black/5 bg-white py-0 shadow-sm">
+      <CardHeader className={`${config.color} flex min-h-16 flex-row items-center justify-between gap-3 px-4 py-3 text-white`}>
         <div className="flex items-center gap-2">
-          {config.icon}
-          <CardTitle className="font-medium">{column.name}</CardTitle>
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15">{config.icon}</span>
+          <div>
+            <CardTitle className="text-sm font-semibold">{column.name}</CardTitle>
+            <p className="mt-0.5 text-xs text-white/70">
+              {sortedJobs.length} {sortedJobs.length === 1 ? "application" : "applications"}
+            </p>
+          </div>
         </div>
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" className="h-6 w-6 text-white"/>}>
                 <MoreVertical className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem
+                className="text-destructive"
+                disabled={!canDelete}
+                onClick={() => setDeleteDialogOpen(true)}
+              >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Delete Column
+                {canDelete ? "Delete column" : "Keep at least one column"}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
       </CardHeader>
       <CardContent  
         ref={setNodeRef}
-        className={`space-y-2 pt-4 bg-gray-50/50 min-h-[400px] rounded-b-lg ${
+        className={`flex min-h-[26rem] flex-col space-y-2 bg-stone-50/70 px-3 pt-3 ${
           isOver ? "ring-2 ring-blue-500" : ""
         }`}>
         <SortableContext 
           items={sortedJobs.map(job => job._id)}
           strategy={verticalListSortingStrategy}
         >
-          {sortedJobs.map((job, key) => (
+          {sortedJobs.map((job) => (
             <SortableJobCard
-              key={key}
+              key={job._id}
               job={{ ...job, columnId: job.columnId || column._id }}
               columns={sortedColumns}
             />
           ))}
+          {sortedJobs.length === 0 ? (
+            <div className="flex min-h-28 items-center justify-center rounded-xl border border-dashed border-stone-300 bg-white/60 px-4 text-center text-sm text-muted-foreground">
+              Drop an application here or add a new one.
+            </div>
+          ) : null}
         </SortableContext>
-        <CreateJobApplicationDialog columnId={column._id} boardId={boardId} />
+        <div className="mt-auto pt-2">
+          <CreateJobApplicationDialog columnId={column._id} boardId={boardId} />
+        </div>
       </CardContent>
     </Card>
+    <DeleteColumnDialog
+      columnName={column.name}
+      jobCount={sortedJobs.length}
+      open={deleteDialogOpen}
+      onOpenChange={setDeleteDialogOpen}
+      onConfirm={() => onDelete(column._id)}
+    />
   </div>
 )
 
@@ -161,7 +191,7 @@ function SortableJobCard({
 
 export default function KanbanBoard({ board }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const { columns, moveJob } = useBoard(board);
+  const { columns, moveJob, deleteColumn } = useBoard(board);
 
   const sortedColumns = [...columns].sort((a, b) => a.order - b.order);
 
@@ -193,7 +223,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
 
     for (const column of sortedColumns) {
       const jobs =
-        column.jobApplications.sort((a, b) => a.order - b.order) || [];
+        [...(column.jobApplications ?? [])].sort((a, b) => a.order - b.order);
       const jobIndex = jobs.findIndex((j) => j._id === activeId);
       if (jobIndex !== -1) {
         draggedJob = jobs[jobIndex];
@@ -220,7 +250,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
     if (targetColumn) {
       targetColumnId = targetColumn._id;
       const jobsInTarget =
-        targetColumn.jobApplications
+        [...targetColumn.jobApplications]
           .filter((j) => j._id !== activeId)
           .sort((a, b) => a.order - b.order) || [];
       newOrder = jobsInTarget.length;
@@ -238,7 +268,7 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
       if (!targetColumnObj) return;
 
       const allJobsInTargetOriginal =
-        targetColumnObj.jobApplications.sort((a, b) => a.order - b.order) || [];
+        [...targetColumnObj.jobApplications].sort((a, b) => a.order - b.order);
 
       const allJobsInTargetFiltered =
         allJobsInTargetOriginal.filter((j) => j._id !== activeId) || [];
@@ -287,8 +317,8 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
-        <div className="flex gap-4 overflow-x-auto pb-4">
-        {columns.map((col, key) =>{
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5">
+        {sortedColumns.map((col, key) =>{
           const config = COLUMN_CONFIG[key] || {
               color: "bg-gray-500",
               icon: <Calendar className="h-4 w-4" />,
@@ -296,11 +326,13 @@ export default function KanbanBoard({ board }: KanbanBoardProps) {
  
           return(
            <DroppableColumn
-                key={key}
+                key={col._id}
                 column={col}
                 config={config}
                 boardId={board._id}
                 sortedColumns={sortedColumns}
+                canDelete={sortedColumns.length > 1}
+                onDelete={deleteColumn}
               />
             )
           })}

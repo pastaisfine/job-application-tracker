@@ -42,17 +42,22 @@ async function DashboardPage(){
   }
 
   return(
-    <div>
-      <div className="min-h-screen bg-white">
-        <div className="container mx-auto p-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-black">Job Hunt</h1>
-            <p className="text-gray-600">Track your job applications</p>
-          </div>
-          <KanbanBoard board={JSON.parse(JSON.stringify(board))} userId={session.user.id} />
+    <main className="min-h-[calc(100vh-4rem)] bg-stone-50">
+      <div className="mx-auto max-w-[100rem] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-7 flex flex-col gap-2 border-b border-stone-200 pb-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+            Application pipeline
+          </p>
+          <h1 className="font-heading text-3xl font-semibold tracking-tight text-stone-950 sm:text-4xl">
+            Job Hunt
+          </h1>
+          <p className="max-w-2xl text-sm leading-6 text-stone-600 sm:text-base">
+            Keep every opportunity moving. Drag applications between stages as your conversations progress.
+          </p>
         </div>
+        <KanbanBoard board={JSON.parse(JSON.stringify(board))} userId={session.user.id} />
       </div>
-    </div>
+    </main>
   )
 }
 
